@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <PackageLicenseUrl>http://www.boost.org/LICENSE_1_0.txt</PackageLicenseUrl>
+    <Copyright>Copyright 2017 Solcept AG, 2002-2018, Hans Maerki, Maerki Informatik</Copyright>
+    <PackageProjectUrl>https://github.com/hmaerki/ZuluSpreadSheet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hmaerki/ZuluSpreadSheet</RepositoryUrl>
+    <PackageTags>Reader OpenOffice Calc Excel  OpenXml OfficeOpenXML</PackageTags>
+    <Description>Read data from Excel or Calc SpreadSheets. Runs without external libraries.</Description>
+    <Authors>Hans Märki</Authors>
+    <Company>Märki Informatik</Company>
+    <Product>Zulu Spread Sheet</Product>
+    <Version>3.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+	<head>
+  <title>ZuluSpreadSheet</title>
+  <style type="text/css">
+<!--
+body {font-family: Arial; color: #000000; margin: 1px}
+code {font-family: "Courier New", Courier, mono; color: #336699}
+pre  {font-family: "Courier New", Courier, mono;
+      color: black; background-color: #eeeeee;
+	   border: 1pt solid; border-color: #336699; width: 0;
+	   padding-right: 7pt; padding-left: 7pt; padding-top: 7pt; padding-bottom: 7pt;
+	   overflow: auto; width: auto; white-space: pre; }
+p    {font-size: 10pt}
+h1, h2, h3, h4 {font-weight: bold; color: #336699}
+h1   {margin-top: 7px; margin-bottom: 5px; font-size: 160%}
+h2   {margin-top: 7px; margin-bottom: 4px; font-size: 130%}
+h3   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
+h4   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
+td   {}
+li   {}
+ul   {margin-top: 2px; margin-bottom: 2px}
+ol   {margin-top: 2px; margin-bottom: 2px}
+hr   {color: #336699; height: 1px}
+b    {color: #336699}
+img  {border: none}
+a          {color: #336699}
+a:hover    {color: #000077}
+a:visited  {color: #996699}
+-->
+</style>
+</head>
+
+    <body>
+        <h1>ZuluSpreadSheet</h1>
+        <h2>Intention</h2>
+        <ul>
+            <li>Read data from Spreadsheet-Cells.</li>
+            <li>C# only, no dependencies to other libraries.</li>
+            <li>Implemented for Excel and OpenOffice-Calc.</li>
+            <li>Module "SpreadSheet": Access Cell by Worksheet/Row/Column.</li>
+            <li>Module "Table": Higher-Level Access.</li>
+        </ul>
+        <h3>Remarks</h3><p>The data read from the Spreadsheet-document is limited to what is seen from the user:</p>
+        <ul>
+            <li>If there is a formula "=1+1" in a cell, the result "2" is displayed to the user - and "2" is returned by this library.</li>
+            <li>If a float "1234.5678" was entered into a cell and the formatting limits the number to "1234.56" - "1234.56" is returned by this library.</li>
+            <li>No formatting (font, bold, italic, ...) will be returned.</li>
+        </ul><p>There are some differences how data is stored in OpenOffice-Writer and Excel: See "Limitations" below.</p>
+        <h3>Standards</h3>
+
+        <ul>
+            <li>
+                <a href="https://www.openoffice.org/xml/general.html">Open Office XML</a>
+            </li>
+            <li>
+                <a href="https://en.wikipedia.org/wiki/Office_Open_XML">Microsoft Office Open XML</a>.</li>
+        </ul>
+
+        <h2>Concepts for all Modules</h2>
+        <h3>IReference</h3><p>Nearly all objects implement IReference:</p>
+        <code><pre>public interface IReference
+{
+   /// <summary>
+   /// A textual representation where the object comes from.
+   ///    TYPE            EXAMPLE REFERENCE
+   ///    SpreadSheet     "xy.odt"
+   ///    Worksheet       Worksheet "test" in "xy.odt"
+   ///    Cell            Cell AZ in Worksheet "test" in "xy.odt"
+   /// </summary>
+   string Reference { get ; }
+
+   /// <summary>
+   /// For example
+   ///   xy.odt          // For a ISpreadSheetReader
+   ///   Configuration   // For a IWorksheet
+   ///   Members         // For a Table
+   ///   A5              // For a ICell
+   /// </summary>
+   string Name { get ; }
+
+   /// <summary>
+   /// For example
+   ///   file 'xy.od'               // For a ISpreadSheetReader
+   ///   worksheet 'Configuration'   // For a IWorksheet
+   ///   table 'Members'             // For a Table
+   ///   cell 'A5'                   // For a ICell
+   /// </summary>
+   string Description { get ; }
+}</pre></code>
+
+        <p>IReference is a human readable reference which allows the enduser to find a element (cell, row, worksheet, ...).</p>
+        <h3>SpreadSheetException</h3>
+        <code><pre>
+public class SpreadSheetException : Exception
+{
+   public SpreadSheetException( string msg, IReference reference = null ) : base (msg) {}
+}</pre></code>        
+
+        <p>This <code>SpreadSheetException</code> extends a <code>Exception</code> and associates a <code>IReference</code>-Object.</p><p>If an error occurs in the library, most likely a <code>SpreadSheetException</code> will be thrown.</p><p>In
+ most cases, the only thing you have to to is to display the message to the enduser. The enduser will know what has to be done.</p>
+        <p>Example:</p>
+
+        <code><pre>CachedSpreadSheet spreadSheet = new CachedSpreadSheet("test.ods");
+ICell cell = spreadSheet[ "SheetA" ][ "E13" ]
+int i = cell.Parse&lt;int>();</pre></code>   
+
+        <p>The above code assumes, that in cell "C5" is an integer. However, if cell "C5" contains "male", this exception will be thrown:</p>
+        <p><code>'male' is not a valid integer! Reference: cell 'E13' in worksheet 'SheetA' in file 'excel_openoffice_test.ods'</code></p>
+        <p>This message is sufficient for the enduser to be able fix the document.</p>
+        <h2>Modules</h2>
+        <p><img src="images/image_Packages.png"/></p>
+        <ul>
+            <li>SpreadSheet implements the access using iterators over worksheets, rows and cells.</li>
+            <li>CachedSpreadSheet implements the access using Worksheet/Row/Column.</li>
+            <li>Table implements a limited, but higher-level access.</li>
+            <li>TableDump may be used to compare the contents of different spreadsheet-revisions.</li>
+        </ul>
+        <h3>Module SpreadSheet</h3><p>SpreadSheet implements the access using iterators over worksheets, rows and cells</p>
+        <h3>Module SpreadSheet - API</h3>
+        <p><img src="images/image_SpreadSheet.png"/></p>
+        <p>The interfaces reflect the organisation of OpenOffice-Calc document.</p><p>Access is done using iterators.</p>
+
+        <code><pre>ISpreadSheetReader reader = SpreadSheetReaderFactory.factory(Filename);
+foreach (IWorksheet worksheet in reader.Worksheets)
+{
+   Debug.Print( "Worksheet: " + worksheet.Name);
+   foreach (IRow row in worksheet.Rows)
+   {
+     for (int i = 0; i &lt; row.Columns; i++)
+     {
+       ICell cell = row[i];
+       Debug.Print("Cell: " + cell.String);
+       int i = cell.Parse&lt;int>();
+     }
+   }
+}</pre></code>                        
+        <h3>Typed access</h3><p>ICell.Parse&lt;T&gt;() allows parsing of many datatypes. An exception is thrown, when parising fails.</p>
+
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Datatype</th>
+                    <th>Example</th>
+                    <th>Limitation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>int, uint, ...</td>
+                    <td>12</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td>Enum</td>
+                    <td>male</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td>float, double</td>
+                    <td>1234.5678</td>
+                    <td>Difference in precision between OpenOffice and Excel - see Limitations.</td>
+                </tr>
+                <tr>
+                    <td>DateTime</td>
+                    <td>2017-06-12</td>
+                    <td>Only works in OpenOffice.</td>
+                </tr>
+                <tr>
+                    <td>others</td>
+                    <td>&nbsp;</td>
+                    <td>not tested.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Module CachedSpreadSheet</h3><p>CachedSpreadSheet caches a SpreadSheet and therefore provides direct access using Worksheet/Row/Column.</p>
+
+        <code><pre>
+CachedSpreadSheet spreadSheet = new CachedSpreadSheet(Filename);
+ICell cell = spreadSheet[ "SheetA" ][ "C5" ];
+Debug.Print( "Cell: " + cell.String);</pre></code>
+
+        <h3>Module Table - Introduction</h3><p>Table are defined by Keywords entered into a SpreadSheet.</p>
+        <p><img src="images/image_TableExample.png"/>
+        </p><p>The above image shows "TableC". These rules apply:</p>
+        <ul>
+            <li>The keyword "TABLE" in the first column identifies a "Table".</li>
+            <li>The table ends at the next row with an empty first column.</li>
+            <li>The first column may be "TABLE" or "-". "-" indicates a row to be skipped.</li>
+            <li>The name of the table is written in the second column of the first row. In this case "Table C".</li>
+            <li>The  name of the columns follow in the first row. The columns end with the first empty cell. If a column name is "-", the entire column is skipped.</li>
+            <li>Coloring is done for readability only - it has no influence of the processing of the sheet.</li>
+            <li>It is an error to have two tables within the same name in a OpenOffice-Calc document.</li>
+            <li>It has no influence, on which worksheet or on which row a table is placed.</li>
+        </ul><p>This is a higher-level access to SpreadSheet-Data which eases the access by a program.</p><p>Comparision to databases:</p>
+        <ul>
+            <li>Table limit data access similar to databases: A table contains rows of columns.</li>
+            <li>In a database, the columns are typed (string, integer, date). This may be also done - see TypedRow&lt;T&gt;.</li>
+        </ul>
+        <h4>Advantages of Table over a SpreadSheet.</h4>
+        <ul>
+            <li>Loose coupling between SpreadSheet organisation and program.</li>
+            <li>Tight coupling between SpreadSheet data and program.</li>
+            <li>Tables may be added or reordered without having to change the program.</li>
+            <li>Typed access to TableColumns.</li>
+            <li>High-Level anduser-friendly Exceptions.</li>
+            <li>Linq-enabled.</li>
+        </ul>
+        <h3>Module Table - API</h3>
+        <p><img src="images/image_Table.png"/></p>
+        <p>The classes represent the structure of the Tables.</p>
+        <h4>Typed access</h4>
+        <p><img src="images/image_TableExample.png"/></p>
+        <p>The structure above is represented by the structure below:</p>
+
+        <code><pre>private class TableC : ITableRowTyped
+{
+   public enum EnumGender { male, female };
+   public const string TableName = "TableC" ;
+   public ITableRow TableRow { get ; set ; }
+
+   public readonly string Name = null ;
+   public readonly int Age = 0;
+   public readonly EnumGender Gender = EnumGender.male;
+   public readonly double Size = 0.0;
+}</pre></code>
+
+
+        <p>With this definition, the document may be read with very few lines of code:</p>
+
+        <code><pre>ITableCollection tables = TableCollection.factory(Filename);
+foreach (TableC row in tables.TypedRows&lt;TableC>())
+{
+   Debug.Print(row.Name + " " + row.Age + " " + row.Gender);
+}</pre></code>
+
+
+        <h4>Linq</h4><p>Using above code, Linq may be used to do fancy stuff - for example to find out "Otto"s age:</p>
+
+
+        <code><pre>int ottosAge = tables.TypedRows&lt;TableC>().Where(row => row.Name == "Otto" ).First().Age;</pre></code>                            
+
+        <p>Please note, that also when using complex constructs, the SpreadSheetException thrown in case of an error are meaningful.</p>
+        <h2>Know Limitations</h2>
+        <h3>Text in IReference and SpreadSheetException is in english.</h3>
+        <h3>Merged Cells has not been tested.</h3>
+        <h3>Excel/Openoffice with Macros (Different File endings)</h3>
+        <h3>Values for Double and Dates.</h3>
+        <p>The current implementation takes text.<br/> Program returned value<br/>
+            <code>Excel 165.34567000000001</code>
+            <br/>
+            <code> OpenOffice 165.35</code>
+            <br/>
+            <br/>Program returned value<br/>
+            <code>Excel 33646.043090277803</code>
+            <br/>
+            <code>OpenOffice 1992-02-12</code>
+        </p>
+        <h4>Excel:</h4>
+
+
+        <code><pre>&lt;c>&lt;cr="F16" s="9">
+&lt;v>165.34567000000001&lt;/v>
+&lt;/c>
+&lt;c>&lt;cr="G16" s="10">
+&lt;v>33646.043090277803&lt;/v>
+&lt;/c></pre></code>           
+
+
+
+        <h4> OpenOffice:</h4>
+
+
+        <code><pre>&lt;table:table-cell table:style-name="ce10" office:value-type="float" office:value = "165.34567">
+&lt;text:p>165.35&lt;/text:p>
+&lt;/table:table-cell>
+&lt;table:table-cell table:style-name="ce12" office:value-type="date" office:date-value="1992-02-12T01:02:03">
+&lt;text:p>1992-02-12&lt;/text:p>
+&lt;/table:table-cell></pre></code>   
+
+
+
+        <p>For OpenOffice: The values DISPLAYED are returned.<br/> For Excel: The effective values are returned in high resolution. In case of DateTime, a double is returned.</p>
+
+    </body>
+</html>
