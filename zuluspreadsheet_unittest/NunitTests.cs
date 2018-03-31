@@ -199,9 +199,9 @@ namespace Zulu.Table.NunitTests
     /// <summary>
     /// This class represents 'TableA' in our Excel/OpenOffice-Sheet
     /// </summary>
+    [TableName("TableA")]
     private class TableARow : ITableRowTyped
     {
-      public const string TableName = "TableA";
       public ITableRow TableRow { get; set; }
       public readonly string Spalte4 = null;
       public readonly string Spalte5 = null;
@@ -258,9 +258,9 @@ namespace Zulu.Table.NunitTests
     /// <summary>
     /// This class represents 'TableA' in our Excel/OpenOffice-Sheet.
     /// </summary>
+    [TableName("TableA")]
     private class TableARow_WrongDatatype : ITableRowTyped
     {
-      public const string TableName = "TableA";
       public ITableRow TableRow { get; set; }
       /// <summary>'int' is a wrong datatype for 'Spalte7'.</summary>
       public readonly int Spalte7 = 0;
@@ -286,9 +286,9 @@ namespace Zulu.Table.NunitTests
     /// <summary>
     /// This class represents 'TableA' in our Excel/OpenOffice-Sheet.
     /// </summary>
+    [TableName("TableA")]
     private class TableARow_WrongColumnName : ITableRowTyped
     {
-      public const string TableName = "TableA";
       public ITableRow TableRow { get; set; }
       /// <summary>Column 'Spalte77' is invalid.</summary>
       public readonly string Spalte77 = null;
@@ -317,9 +317,9 @@ namespace Zulu.Table.NunitTests
     /// <summary>
     /// This class represents 'TableA' in our Excel/OpenOffice-Sheet.
     /// </summary>
+    [TableName("TableA_WrongTableName")]
     private class TableARow_WrongTableName : ITableRowTyped
     {
-      public const string TableName = "TableA_WrongTableName";
       public ITableRow TableRow { get; set; }
       public readonly string Spalte7 = null;
     }

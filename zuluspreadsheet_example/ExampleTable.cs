@@ -7,9 +7,10 @@ using System.Linq;
 
 namespace Zulu.Table.Example
 {
+  [FileName(DemoTable.Filename)]
   class DemoTable
   {
-    public static readonly string Filename = "./zuluspreadsheet_test.ods";
+    public const string Filename = "./zuluspreadsheet_test.ods";
 
     /// <summary>
     /// This code expected a table as follows in OpenOffice-Calc or Excel:
@@ -17,10 +18,10 @@ namespace Zulu.Table.Example
     /// TABLE                Max       12
     /// TABLE                Moritz    13
     /// </summary>
+    [TableName("TableC")]
     private class TableC : ITableRowTyped
     {
       public enum EnumGender { male, female };
-      public const string TableName = "TableC";
       public ITableRow TableRow { get; set; }
 
       public readonly string Name = null;
@@ -80,10 +81,10 @@ namespace Zulu.Table.Example
 
   class DemoTableLinq
   {
+    [TableName("Equipment")]
     private class TableEquipment : ITableRowTyped
     {
       public enum EnumType { Voltmeter, Multimeter, Oscilloscope };
-      public const string TableName = "Equipment";
       public ITableRow TableRow { get; set; }
 
       public readonly int ID = 0;
@@ -92,9 +93,9 @@ namespace Zulu.Table.Example
       public readonly string Serial = null;
     }
 
+    [TableName("Measurement")]
     private class TableMeasurement : ITableRowTyped
     {
-      public const string TableName = "Measurement";
       public ITableRow TableRow { get; set; }
 
       public readonly DateTime Date = DateTime.MinValue;

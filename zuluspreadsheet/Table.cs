@@ -5,11 +5,11 @@
 // (c) Copyright 2002-2018, Hans Maerki, Maerki Informatik
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt)
 //
-using Zulu.Table.SpreadSheet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Zulu.Table.SpreadSheet;
 
 namespace Zulu.Table.Table
 {
@@ -58,6 +58,46 @@ namespace Zulu.Table.Table
   #endregion
 
   #region Implementation
+  public class FileNameAttribute : Attribute
+  {
+    private string Filename;
+
+    public FileNameAttribute(string filename)
+    {
+      Filename = filename;
+    }
+
+    public static string GetName<T>(string memberName, string example = "sheet.ods") where T : ITableRowTyped, new()
+    {
+      FileNameAttribute attrib = typeof(T).GetCustomAttribute<FileNameAttribute>();
+      if (attrib == null)
+      {
+        throw new Exception("Programmierfehler: Die Klasse '" + typeof(T).FullName + "' benötigt dieses Attribut: [FileName(\"" + example + "\")]");
+      }
+      return attrib.Filename;
+    }
+  }
+
+  public class TableNameAttribute : Attribute
+  {
+    private string Name;
+
+    public TableNameAttribute(string name)
+    {
+      Name = name;
+    }
+
+    public static string GetName<T>(string memberName, string example = "sample") where T : ITableRowTyped, new()
+    {
+      TableNameAttribute attrib = typeof(T).GetCustomAttribute<TableNameAttribute>();
+      if (attrib == null)
+      {
+        throw new Exception("Programmierfehler: Die Klasse '" + typeof(T).FullName + "' benötigt dieses Attribut: [TableName(\"" + example + "\")]");
+      }
+      return attrib.Name;
+    }
+  }
+
   public class TableCollection : ITableCollection, IReference
   {
     #region static factories
@@ -75,7 +115,7 @@ namespace Zulu.Table.Table
     #region public
     public string FileName { get { return reader.Filename; } }
     public string[] TableNames { get; private set; }
-    public IEnumerator<ITable> GetEnumerator() { return tables.Values.OrderBy(t=>t.Name).GetEnumerator(); }
+    public IEnumerator<ITable> GetEnumerator() { return tables.Values.OrderBy(t => t.Name).GetEnumerator(); }
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return this.GetEnumerator(); }
 
     public string Name { get { return reader.Name; } }
@@ -118,38 +158,20 @@ namespace Zulu.Table.Table
     /// No tablename is given as parameter.
     /// So we expect to get the tablename as a static const of the class.
     /// Example:
+    ///    [TableName("Articles")]
     ///    class Row {
-    ///      public static string TableName = "Articles";
     ///      public string Name;
     ///      public int Price;
     ///    }
-    /// We now get the tablename using reflection.
+    /// We now get the tablename from the Attribute.
     /// </summary>
     public TypedTable<T> TypedRows<T>(string tableName = null) where T : ITableRowTyped, new()
     {
       if (tableName == null)
       {
-        tableName = ExtractStaticMember<T>(MEMBER_TABLE_NAME, "Articles");
+        tableName = TableNameAttribute.GetName<T>("Articles");
       }
       return new TypedTable<T>(this, tableName);
-    }
-
-    /// <summary>
-    /// Extract a static member from a type using reflections.
-    /// For example:
-    /// <example>class T { public const string FileName = @"..\..\testcases.ods"; }</example>
-    /// Usage:
-    /// <example>exctractStaticMember<T>("FileName", "file_xy.ods")</example> will return <example>@"..\..\testcases.ods";</example>
-    /// </summary>
-    public static string ExtractStaticMember<T>(string memberName, string example = "sample") where T : ITableRowTyped, new()
-    {
-      FieldInfo fi = typeof(T).GetField(memberName, BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-      if (fi == null)
-      {
-        throw new Exception("Programmierfehler: Die Klasse '" + typeof(T).FullName + "' muss dies definieren: public const " + memberName + " = \"" + example + "\";");
-      }
-      string value = fi.GetValue(null) as string;
-      return value;
     }
 
     protected void LoopRows(IWorksheet worksheet)
@@ -212,12 +234,12 @@ namespace Zulu.Table.Table
       {
         if (tableCollection == null)
         {
-          string fileName = TableCollection.ExtractStaticMember<T>(TableCollection.MEMBER_FILE_NAME, "file_xy.ods");
+          string fileName = FileNameAttribute.GetName<T>("file_xy.ods");
           tableCollection = TableCollection.factory(fileName);
         }
         if (tableName == null)
         {
-          tableName = TableCollection.ExtractStaticMember<T>(TableCollection.MEMBER_TABLE_NAME, "Articles");
+          tableName = TableNameAttribute.GetName<T>("Articles");
         }
         try
         {
@@ -567,9 +589,6 @@ namespace Zulu.Table.Table
     private const int CELLINDEX_TABLE = 0;
     private const int CELLINDEX_TABLE_NAME = 1;
     private const int CELLINDEX_DATA_START = 2;
-
-    private const string MEMBER_FILE_NAME = "FileName";
-    private const string MEMBER_TABLE_NAME = "TableName";
     #endregion
 
     #region private

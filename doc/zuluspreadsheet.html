@@ -61,10 +61,10 @@ a:visited  {color: #996699}
         <ul>
             <li>Use Visual Studio to create a C# application. Add <code>ZuluSpreadSheet</code> using Nuget.</li>
             <li>Use above link to download <code>zuluspreadsheet_test.ods</code> and place it in the binary-folder.</li>
-            <li>Add <code><pre>class TableC : ITableRowTyped
+            <li>Add <code><pre>[TableName("TableC")]
+class TableC : ITableRowTyped
 {
   public enum EnumGender { male, female };
-  public const string TableName = "TableC";
   public ITableRow TableRow { get; set; }
 
   public readonly string Name = null;
@@ -267,10 +267,10 @@ Debug.Print( "Cell: " + cell.String);</pre></code>
         <p><img src="images/image_TableExample.png"/></p>
         <p>The structure above is represented by the structure below:</p>
 
-        <code><pre>private class TableC : ITableRowTyped
+        <code><pre>[TableName("TableC")]
+class TableC : ITableRowTyped
 {
    public enum EnumGender { male, female };
-   public const string TableName = "TableC" ;
    public ITableRow TableRow { get ; set ; }
 
    public readonly string Name = null ;
