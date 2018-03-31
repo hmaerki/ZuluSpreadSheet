@@ -60,8 +60,8 @@ a:visited  {color: #996699}
         <h2>For the impatient</h2>
         <ul>
             <li>Use Visual Studio to create a C# application. Add <code>ZuluSpreadSheet</code> using Nuget.</li>
-            <li>Use above link to <code>download zuluspreadsheet_test.ods</code> and place it in the binary-folder.</li>
-            <li>Add <code><pre>private class TableC : ITableRowTyped
+            <li>Use above link to download <code>zuluspreadsheet_test.ods</code> and place it in the binary-folder.</li>
+            <li>Add <code><pre>class TableC : ITableRowTyped
 {
   public enum EnumGender { male, female };
   public const string TableName = "TableC";
@@ -75,7 +75,7 @@ a:visited  {color: #996699}
 
 static void Main(string[] args)
 {
-  ITableCollection tables = TableCollection.factory(Filename);
+  ITableCollection tables = TableCollection.factory("zuluspreadsheet_test.ods");
   foreach (TableC row in tables.TypedRows&lt;TableC>())
   {
     Debug.Print(row.Name + " " + row.Age + " " + row.Gender);
