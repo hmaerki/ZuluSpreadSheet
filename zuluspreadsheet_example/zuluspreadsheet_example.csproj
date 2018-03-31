@@ -20,4 +20,12 @@
   <ItemGroup>
     <ProjectReference Include="..\zuluspreadsheet\zuluspreadsheet.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="zuluspreadsheet_test.ods">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="zuluspreadsheet_test.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

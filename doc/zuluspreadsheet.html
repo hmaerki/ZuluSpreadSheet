@@ -5,12 +5,13 @@
   <style type="text/css">
 <!--
 body {font-family: Arial; color: #000000; margin: 1px}
-code {font-family: "Courier New", Courier, mono; color: #336699}
+code {font-family: "Courier New", Courier, mono; color: #336699;
+      font-size: 10pt}
 pre  {font-family: "Courier New", Courier, mono;
       color: black; background-color: #eeeeee;
-	   border: 1pt solid; border-color: #336699; width: 0;
-	   padding-right: 7pt; padding-left: 7pt; padding-top: 7pt; padding-bottom: 7pt;
-	   overflow: auto; width: auto; white-space: pre; }
+      border: 1pt solid; border-color: #336699; width: 0;
+      padding-right: 7pt; padding-left: 7pt; padding-top: 7pt; padding-bottom: 7pt;
+      overflow: auto; width: auto; white-space: pre; }
 p    {font-size: 10pt}
 h1, h2, h3, h4 {font-weight: bold; color: #336699}
 h1   {margin-top: 7px; margin-bottom: 5px; font-size: 160%}
@@ -18,7 +19,7 @@ h2   {margin-top: 7px; margin-bottom: 4px; font-size: 130%}
 h3   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
 h4   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
 td   {}
-li   {}
+li   {font-size: 10pt}
 ul   {margin-top: 2px; margin-bottom: 2px}
 ol   {margin-top: 2px; margin-bottom: 2px}
 hr   {color: #336699; height: 1px}
@@ -33,7 +34,22 @@ a:visited  {color: #996699}
 
     <body>
         <h1>ZuluSpreadSheet</h1>
+        <h2>Important links</h2>
+        <ul>
+            <li>Nuget: <code>ZuluSpreadSheet</code></li>
+            <li>Sources: <a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet">https://github.com/hmaerki/ZuluSpreadSheet</a>.
+            Sources, Examples and NUnit-Tests</li>
+            <li>Examples</li>
+            <ul>
+                <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/ExampleSpreadSheet.cs">ExampleSpreadSheet.cs</a> Example code accessing lowlevel cells. See chapter <a href="#spreadsheet">Module SpreadSheet</a> below.</li>
+                <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/ExampleTable.cs">ExampleTable.cs</a> Example accessing highlevel-tables. See chapter <a href="#table">Module Table</a> below.</li>
+                <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/zuluspreadsheet_test.ods">zuluspreadsheet_test.ods</a> OpenOffice-Calc used by the examples.</li>
+                <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/zuluspreadsheet_test.xlsx">zuluspreadsheet_test.xlsx</a> Excel used by the examples.</li>
+            </ul>
+        </ul>
         <h2>Intention</h2>
+        <p>You have to write a application where the end user has to provide some information. Yes, you could use configurations files. But this library is a very sexy alternative!</p>
+        <p>The library provides a very simple way to access spread sheets. The exceptions contain readable text which eases developers work to provide good feedback to the enduser.</p>
         <ul>
             <li>Read data from Spreadsheet-Cells.</li>
             <li>C# only, no dependencies to other libraries.</li>
@@ -41,51 +57,87 @@ a:visited  {color: #996699}
             <li>Module "SpreadSheet": Access Cell by Worksheet/Row/Column.</li>
             <li>Module "Table": Higher-Level Access.</li>
         </ul>
-        <h3>Remarks</h3><p>The data read from the Spreadsheet-document is limited to what is seen from the user:</p>
+        <h2>For the impatient</h2>
         <ul>
-            <li>If there is a formula "=1+1" in a cell, the result "2" is displayed to the user - and "2" is returned by this library.</li>
-            <li>If a float "1234.5678" was entered into a cell and the formatting limits the number to "1234.56" - "1234.56" is returned by this library.</li>
-            <li>No formatting (font, bold, italic, ...) will be returned.</li>
-        </ul><p>There are some differences how data is stored in OpenOffice-Writer and Excel: See "Limitations" below.</p>
-        <h3>Standards</h3>
+            <li>Use Visual Studio to create a C# application. Add <code>ZuluSpreadSheet</code> using Nuget.</li>
+            <li>Use above link to <code>download zuluspreadsheet_test.ods</code> and place it in the binary-folder.</li>
+            <li>Add <code><pre>private class TableC : ITableRowTyped
+{
+  public enum EnumGender { male, female };
+  public const string TableName = "TableC";
+  public ITableRow TableRow { get; set; }
 
+  public readonly string Name = null;
+  public readonly int Age = 0;
+  public readonly EnumGender Gender = EnumGender.male;
+  public readonly double Size = 0.0;
+}
+
+static void Main(string[] args)
+{
+  ITableCollection tables = TableCollection.factory(Filename);
+  foreach (TableC row in tables.TypedRows&lt;TableC>())
+  {
+    Debug.Print(row.Name + " " + row.Age + " " + row.Gender);
+  }
+}</code></pre> to your Main().</li>
+            <li>Run the application and look at Output-Window. You will see the ages of this table:<br/><img src="images/image_TableExample.png"/></li>
+        </ul>
+<!--
+        <h2>For the impatient</h2>
         <ul>
-            <li>
-                <a href="https://www.openoffice.org/xml/general.html">Open Office XML</a>
-            </li>
-            <li>
-                <a href="https://en.wikipedia.org/wiki/Office_Open_XML">Microsoft Office Open XML</a>.</li>
+            <li>Use Visual Studio to create a C# application. Add <code>ZuluSpreadSheet</code> using Nuget.</li>
+            <li>Use above link to download zuluspreadsheet_test.ods and place it in the binary-folder.</li>
+            <li>Use above link to download ExampleTable.cs to your project.</li>
+            <li>Add <code><pre>      DemoTable demoTable = new DemoTable();
+      demoTable.run();
+
+      DemoTableLinq demoTableLinq = new DemoTableLinq();
+      demoTableLinq.run();
+
+      DemoTableDump demoTableDump = new DemoTableDump();
+      demoTableDump.run();
+
+      DemoSpreadSheet demoSpreadSheet = new DemoSpreadSheet();
+      demoSpreadSheet.run();</code></pre> to your Main().</li>
+            <li>Run the application and look at Output-Window.</li>
+        </ul>
+-->
+        <h3>Standards</h3>
+        <ul>
+            <li><a href="https://www.openoffice.org/xml/general.html">Open Office XML</a></li>
+            <li><a href="https://en.wikipedia.org/wiki/Office_Open_XML">Microsoft Office Open XML</a>.</li>
         </ul>
 
         <h2>Concepts for all Modules</h2>
         <h3>IReference</h3><p>Nearly all objects implement IReference:</p>
         <code><pre>public interface IReference
 {
-   /// <summary>
+   /// &lt;summary>
    /// A textual representation where the object comes from.
    ///    TYPE            EXAMPLE REFERENCE
    ///    SpreadSheet     "xy.odt"
    ///    Worksheet       Worksheet "test" in "xy.odt"
    ///    Cell            Cell AZ in Worksheet "test" in "xy.odt"
-   /// </summary>
+   /// &lt;/summary>
    string Reference { get ; }
 
-   /// <summary>
+   /// &lt;summary>
    /// For example
    ///   xy.odt          // For a ISpreadSheetReader
    ///   Configuration   // For a IWorksheet
    ///   Members         // For a Table
    ///   A5              // For a ICell
-   /// </summary>
+   /// &lt;/summary>
    string Name { get ; }
 
-   /// <summary>
+   /// &lt;summary>
    /// For example
    ///   file 'xy.od'               // For a ISpreadSheetReader
    ///   worksheet 'Configuration'   // For a IWorksheet
    ///   table 'Members'             // For a Table
    ///   cell 'A5'                   // For a ICell
-   /// </summary>
+   /// &lt;/summary>
    string Description { get ; }
 }</pre></code>
 
@@ -102,7 +154,7 @@ public class SpreadSheetException : Exception
         <p>Example:</p>
 
         <code><pre>CachedSpreadSheet spreadSheet = new CachedSpreadSheet("test.ods");
-ICell cell = spreadSheet[ "SheetA" ][ "E13" ]
+ICell cell = spreadSheet["SheetA"]["E13"]
 int i = cell.Parse&lt;int>();</pre></code>   
 
         <p>The above code assumes, that in cell "C5" is an integer. However, if cell "C5" contains "male", this exception will be thrown:</p>
@@ -116,7 +168,7 @@ int i = cell.Parse&lt;int>();</pre></code>
             <li>Table implements a limited, but higher-level access.</li>
             <li>TableDump may be used to compare the contents of different spreadsheet-revisions.</li>
         </ul>
-        <h3>Module SpreadSheet</h3><p>SpreadSheet implements the access using iterators over worksheets, rows and cells</p>
+        <h3 id="spreadsheet">Module SpreadSheet</h3><p>SpreadSheet implements the access using iterators over worksheets, rows and cells</p>
         <h3>Module SpreadSheet - API</h3>
         <p><img src="images/image_SpreadSheet.png"/></p>
         <p>The interfaces reflect the organisation of OpenOffice-Calc document.</p><p>Access is done using iterators.</p>
@@ -182,7 +234,7 @@ CachedSpreadSheet spreadSheet = new CachedSpreadSheet(Filename);
 ICell cell = spreadSheet[ "SheetA" ][ "C5" ];
 Debug.Print( "Cell: " + cell.String);</pre></code>
 
-        <h3>Module Table - Introduction</h3><p>Table are defined by Keywords entered into a SpreadSheet.</p>
+        <h3 id="table">Module Table - Introduction</h3><p>Table are defined by Keywords entered into a SpreadSheet.</p>
         <p><img src="images/image_TableExample.png"/>
         </p><p>The above image shows "TableC". These rules apply:</p>
         <ul>
@@ -244,6 +296,12 @@ foreach (TableC row in tables.TypedRows&lt;TableC>())
 
         <p>Please note, that also when using complex constructs, the SpreadSheetException thrown in case of an error are meaningful.</p>
         <h2>Know Limitations</h2>
+        <h3>Remarks</h3><p>The data read from the Spreadsheet-document is limited to what is seen from the user:</p>
+        <ul>
+            <li>If there is a formula "=1+1" in a cell, the result "2" is displayed to the user - and "2" is returned by this library.</li>
+            <li>If a float "1234.5678" was entered into a cell and the formatting limits the number to "1234.56" - "1234.56" is returned by this library.</li>
+            <li>No formatting (font, bold, italic, ...) will be returned.</li>
+        </ul><p>There are some differences how data is stored in OpenOffice-Writer and Excel: See "Limitations" below.</p>
         <h3>Text in IReference and SpreadSheetException is in english.</h3>
         <h3>Merged Cells has not been tested.</h3>
         <h3>Excel/Openoffice with Macros (Different File endings)</h3>
