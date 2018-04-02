@@ -88,6 +88,16 @@ namespace Zulu.Table.SpreadSheet
     }
   }
 
+  /// <summary>
+  /// Access to named cells
+  /// </summary>
+  public interface INamedCells
+  {
+    string this[string name] { get; }
+    ICell GetCell(string named);
+    string[] Names { get; }
+  }
+
 
   /// <summary>
   /// This is the interface to a Excel- or OpenOffice Calc-document.
@@ -99,7 +109,8 @@ namespace Zulu.Table.SpreadSheet
   public interface ISpreadSheetReader : IReference
   {
     string Filename { get; }
-    IEnumerable<IWorksheet> Worksheets { get; }
+    List<IWorksheet> Worksheets { get; }
+    INamedCells NamedCells { get; }
   }
 
   /// <summary>
@@ -201,12 +212,13 @@ namespace Zulu.Table.SpreadSheet
   public abstract class SpreadSheetReaderFactory : IReference
   {
     #region public
-    public abstract IEnumerable<IWorksheet> Worksheets { get; }
+    public List<IWorksheet> Worksheets { get; private set; }
 
     public string Filename { get; private set; }
     public string Name { get { return Path.GetFileName(Filename); } }
     public string Description { get { return $"file '{Name}'"; } }
     public string Reference { get { return Description; } }
+    public INamedCells NamedCells { get; protected set; }
     #endregion
 
     #region Constants
@@ -241,7 +253,7 @@ namespace Zulu.Table.SpreadSheet
     /// Example: ColumnNumberOffset0=26 -> 'AA'
     /// Example: ColumnNumberOffset0=27 -> 'AB'
     /// </summary>
-    public static string intToAZ(int x)
+    public static string IntToAZ(int x)
     {
       string az = "";
       while (true)
@@ -259,7 +271,25 @@ namespace Zulu.Table.SpreadSheet
       return az;
     }
 
+    /// <summary>
+    /// column  result
+    /// B       1
+    /// AB      27
+    /// </summary>
+    public static int AZtoInt(string sColumn)
+    {
+      int column0 = -1;
+      for (int i = 0; i < sColumn.Length; i++)
+      {
+        column0++;
+        column0 *= 26;
+        column0 += sColumn[i] - 'A';
+      }
+      return column0;
+    }
+
     private static Regex RegexCellAddress = new Regex(@"(?<column>[A-Z]+)(?<row>[0-9]+)");
+
     /// <summary>
     /// Examples
     ///   Text    Column0 Row0
@@ -276,17 +306,10 @@ namespace Zulu.Table.SpreadSheet
         throw new Exception($"'{text} is not a valid address for a cell!");
       }
       int row0 = int.Parse(match.Groups["row"].Value) - 1;
-      int column0 = -1;
       string sColumn = match.Groups["column"].Value;
-      for (int i = 0; i < sColumn.Length; i++)
-      {
-        column0++;
-        column0 *= 26;
-        column0 += sColumn[i] - 'A';
-      }
+      int column0 = AZtoInt(sColumn); ;
       return new CellAddress(text, column0, row0);
     }
-
 
     private SpreadSheetReaderFactory(string filename)
     {
@@ -311,6 +334,54 @@ namespace Zulu.Table.SpreadSheet
     }
     #endregion
 
+    #region NamedCells
+    private class NamedCellsClass : INamedCells
+    {
+      public string this[string name] { get { return d[name].String; } }
+      private Dictionary<string, ICell> d = new Dictionary<string, ICell>();
+
+      public string[] Names { get { return d.Keys.OrderBy(k => k).ToArray(); } }
+
+      public void Add(string name, ICell cell)
+      {
+        d.Add(name, cell);
+      }
+
+      public ICell GetCell(string name)
+      {
+        return d[name];
+      }
+    }
+
+    protected ICell getCell(Regex regexAddress, string address)
+    {
+      Match match = regexAddress.Match(address);
+      Trace.Assert(match != null);
+      string worksheet = match.Groups["worksheet"].Value;
+      string column = match.Groups["column"].Value;
+      string row = match.Groups["row"].Value;
+
+      int column0 = AZtoInt(column);
+      int row0 = int.Parse(row) - 1;
+
+      return getCell(worksheet, column0, row0);
+    }
+
+    private ICell getCell(string worksheet, int column0, int row0)
+    {
+      IWorksheet worksheet_ = Worksheets.Find(ws => ws.Name == worksheet);
+      Trace.Assert(worksheet_ != null);
+
+      // Find row
+      IRow row_ = worksheet_.Rows.Skip(row0).First();
+
+      // Find column
+      ICell cell = row_[column0];
+
+      return cell;
+    }
+    #endregion
+
     #region ReaderExcel
     /// <summary>
     /// Reads a Excel-Document.
@@ -324,6 +395,9 @@ namespace Zulu.Table.SpreadSheet
       public ReaderExcel(string filename)
         : base(filename)
       {
+        XmlDocument xmlWorkbook = loadXml("xl/workbook.xml");
+        Worksheets = loadWorksheets(xmlWorkbook);
+        NamedCells = LoadNamedCells(xmlWorkbook);
       }
 
       protected override void populateNamespace()
@@ -333,29 +407,27 @@ namespace Zulu.Table.SpreadSheet
         nsMgr.AddNamespace("tnsRels", "http://schemas.openxmlformats.org/package/2006/relationships");
       }
 
-      public override IEnumerable<IWorksheet> Worksheets
+      private List<IWorksheet> loadWorksheets(XmlDocument xmlWorkbook)
       {
-        get
+        List<IWorksheet> worksheets = new List<IWorksheet>();
+        XmlDocument xmlSharedStrings = loadXml("xl/sharedStrings.xml");
+        sharedStrings = xmlSharedStrings.SelectNodes("/tns:sst/tns:si/tns:t/text()", nsMgr);
+
+        XmlDocument xmlWorkbookRels = loadXml("xl/_rels/workbook.xml.rels");
+        XmlNodeList selectedNodes = xmlWorkbook.SelectNodes("/tns:workbook/tns:sheets/tns:sheet", nsMgr);
+        foreach (XmlNode selectedNode in selectedNodes)
         {
-          XmlDocument xmlSharedStrings = loadXml("xl/sharedStrings.xml");
-          sharedStrings = xmlSharedStrings.SelectNodes("/tns:sst/tns:si/tns:t/text()", nsMgr);
+          string worksheetName = selectedNode.Attributes["name"].Value;
+          string worksheetId = selectedNode.Attributes["r:id"].Value;
 
-          XmlDocument xmlWorkbook = loadXml("xl/workbook.xml");
-          XmlDocument xmlWorkbookRels = loadXml("xl/_rels/workbook.xml.rels");
-          XmlNodeList selectedNodes = xmlWorkbook.SelectNodes("/tns:workbook/tns:sheets/tns:sheet", nsMgr);
-          foreach (XmlNode selectedNode in selectedNodes)
-          {
-            string worksheetName = selectedNode.Attributes["name"].Value;
-            string worksheetId = selectedNode.Attributes["r:id"].Value;
+          string xPath = @"/tns:Relationships/tns:Relationship[@Id=""" + worksheetId + @"""]";
+          XmlNode targetNode = xmlWorkbookRels.SelectSingleNode(@"/tnsRels:Relationships/tnsRels:Relationship[@Id=""" + worksheetId + @"""]", nsMgr);
+          string targetPath = targetNode.Attributes["Target"].Value;
 
-            string xPath = @"/tns:Relationships/tns:Relationship[@Id=""" + worksheetId + @"""]";
-            XmlNode targetNode = xmlWorkbookRels.SelectSingleNode(@"/tnsRels:Relationships/tnsRels:Relationship[@Id=""" + worksheetId + @"""]", nsMgr);
-            string targetPath = targetNode.Attributes["Target"].Value;
-
-            XmlDocument xmlWorksheet = loadXml("xl/" + targetPath);
-            yield return new Worksheet(this, xmlWorksheet, worksheetName);
-          }
+          XmlDocument xmlWorksheet = loadXml("xl/" + targetPath);
+          worksheets.Add(new Worksheet(this, xmlWorksheet, worksheetName));
         }
+        return worksheets;
       }
 
       protected override IEnumerable<Row> rows(Worksheet worksheet, XmlNode nodeWorksheet)
@@ -419,6 +491,35 @@ namespace Zulu.Table.SpreadSheet
 
         return dictCells;
       }
+
+      #region NamedCells
+      /// <summary>
+      ///   <definedNames>
+      ///       <definedName name = "NamedCellA" >'Named Cells'!$B$2</definedName>
+      ///       <definedName name = "NamedCellB" >'Named Cells'!$B$4</definedName>
+      ///   </definedNames>
+      /// </summary>
+      private INamedCells LoadNamedCells(XmlDocument xmlWorkbook)
+      {
+        NamedCellsClass namedCells = new NamedCellsClass();
+        XmlNodeList xmlDefinedNames = xmlWorkbook.SelectNodes("/tns:workbook/tns:definedNames/tns:definedName", nsMgr);
+        foreach (XmlNode xmlDefinedName in xmlDefinedNames)
+        {
+          string Name = xmlDefinedName.Attributes["name"].Value;
+          string Address = xmlDefinedName.InnerText;
+          ICell cell = getCell(regexAddress, Address);
+          namedCells.Add(Name, cell);
+        }
+        return namedCells;
+      }
+
+      /// <summary>
+      /// $NamedCells.$C$12  (OpenOffice)
+      /// $'Named Cells'.$C$12  (OpenOffice)
+      /// 'Named Cells'!$C$12  (Excel)
+      /// </summary>
+      private static Regex regexAddress = new Regex(@"^('?)(?<worksheet>.*?)('?\!\$)(?<column>.*?)\$(?<row>.*)$");
+      #endregion
     }
     #endregion
 
@@ -429,9 +530,11 @@ namespace Zulu.Table.SpreadSheet
     /// </summary>
     private class ReaderOpenOffice : SpreadSheetReaderFactory, ISpreadSheetReader
     {
-      public ReaderOpenOffice(string filename)
-        : base(filename)
+      public ReaderOpenOffice(string filename) : base(filename)
       {
+        XmlDocument xmlDocContent = loadXml("content.xml");
+        Worksheets = loadWorksheets(xmlDocContent);
+        NamedCells = LoadNamedCells(xmlDocContent);
       }
 
       protected override void populateNamespace()
@@ -440,20 +543,17 @@ namespace Zulu.Table.SpreadSheet
         nsMgr.AddNamespace("office", "urn:oasis:names:tc:opendocument:xmlns:office:1.0");
       }
 
-      public override IEnumerable<IWorksheet> Worksheets
+      private List<IWorksheet> loadWorksheets(XmlDocument xmlDocContent)
       {
-        get
+        List<IWorksheet> worksheets = new List<IWorksheet>();
+        // Loop über alle Worksheets
+        XmlNodeList nodesWorksheets = xmlDocContent.SelectNodes("/office:document-content/office:body/office:spreadsheet/table:table", nsMgr);
+        foreach (XmlNode nodeWorksheet in nodesWorksheets)
         {
-          XmlDocument xmlDoc = loadXml("content.xml");
-
-          // Loop über alle Worksheets
-          XmlNodeList worksheets = xmlDoc.SelectNodes("/office:document-content/office:body/office:spreadsheet/table:table", nsMgr);
-          foreach (XmlNode nodeWorksheet in worksheets)
-          {
-            string worksheetName = nodeWorksheet.Attributes["table:name"].Value;
-            yield return new Worksheet(this, nodeWorksheet, worksheetName);
-          }
+          string worksheetName = nodeWorksheet.Attributes["table:name"].Value;
+          worksheets.Add(new Worksheet(this, nodeWorksheet, worksheetName));
         }
+        return worksheets;
       }
 
       protected override IEnumerable<Row> rows(Worksheet worksheet, XmlNode nodeWorksheet)
@@ -517,6 +617,43 @@ namespace Zulu.Table.SpreadSheet
         }
         return ifNotDefined;
       }
+
+      #region NamedCells
+      /// <summary>
+      ///   <table:named-expressions>
+      ///      <table:named-range table:name="QRcodeIban" table:base-cell-address="$Tabelle1.$C$4" table:cell-range-address="$Tabelle1.$C$12"/>
+      ///      <table:named-range table:name="QRcodeContactName" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$13"/>
+      ///      <table:named-range table:name="QRcodeContactZip" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$14"/>
+      ///      <table:named-range table:name="QRcodeContactCity" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$15"/>
+      ///      <table:named-range table:name="QRcodeContactCountry" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$16"/>
+      ///      <table:named-range table:name="QRcodeContactStreet" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$17"/>
+      ///      <table:named-range table:name="QRcodeContactNumber" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$18"/>
+      ///      <table:named-range table:name="QRcodeReference" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$19"/>
+      ///      <table:named-range table:name="QRcodeAmount" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$20"/>
+      ///      <table:named-range table:name="QRcodeCurrency" table:base-cell-address="$Tabelle1.$C$5" table:cell-range-address="$Tabelle1.$C$21"/>
+      ///    </table:named-expressions>
+      ///  </summary>
+      private INamedCells LoadNamedCells(XmlDocument xmlDocContent)
+      {
+        NamedCellsClass namedCells = new NamedCellsClass();
+        XmlNodeList xmlNamedExpressons = xmlDocContent.SelectNodes("/office:document-content/office:body/office:spreadsheet/table:named-expressions/table:named-range", nsMgr);
+        foreach (XmlNode xmlNamedExpression in xmlNamedExpressons)
+        {
+          string Name = xmlNamedExpression.Attributes["table:name"].Value;
+          string Address = xmlNamedExpression.Attributes["table:cell-range-address"].Value;
+          ICell cell = getCell(regexAddress, Address);
+          namedCells.Add(Name, cell);
+        }
+        return namedCells;
+      }
+
+      /// <summary>
+      /// $NamedCells.$C$12  (OpenOffice)
+      /// $'Named Cells'.$C$12  (OpenOffice)
+      /// 'Named Cells'!$C$12  (Excel)
+      /// </summary>
+      private static Regex regexAddress = new Regex(@"^(\$'?)(?<worksheet>.*?)('?\.\$)(?<column>.*?)(\$)(?<row>.*)$");
+      #endregion
     }
     #endregion
 
@@ -580,7 +717,7 @@ namespace Zulu.Table.SpreadSheet
       #region private
       protected Cell getCell(int column)
       {
-        string name = $"{intToAZ(column)}{RowNumber0 + 1}";
+        string name = $"{IntToAZ(column)}{RowNumber0 + 1}";
         string value;
         if (!dictCells.TryGetValue(column, out value))
         {
@@ -693,7 +830,6 @@ namespace Zulu.Table.SpreadSheet
     private readonly ZipArchive zipIn;
     // TODO(HM): Don't forget to dispose
     private FileStream zipToOpen;
-    protected XmlDocument xmlDoc;
     private XmlNamespaceManager nsMgr;
     #endregion
   }

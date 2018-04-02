@@ -186,7 +186,12 @@ foreach (IWorksheet worksheet in reader.Worksheets)
        int i = cell.Parse&lt;int>();
      }
    }
-}</pre></code>                        
+}</pre></code>
+<p>Excel and OpenOffice allow to name cells. This library allows to use this name to acess these cells. Limitation: Ranges of cells are not supported.</p>
+<code><pre>
+SpreadSheet spreadSheet = ...;
+string value = spreadSheet.NamedCells["CellName"];
+</pre></code>                     
         <h3>Typed access</h3><p>ICell.Parse&lt;T&gt;() allows parsing of many datatypes. An exception is thrown, when parising fails.</p>
 
 

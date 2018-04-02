@@ -5,9 +5,9 @@
 // (c) Copyright 2002-2018, Hans Maerki, Maerki Informatik
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt)
 //
-using Zulu.Table.SpreadSheet;
 using System.Collections.Generic;
 using System.Linq;
+using Zulu.Table.SpreadSheet;
 
 namespace Zulu.Table.CachedWorkSheetNamespace
 {
@@ -16,6 +16,8 @@ namespace Zulu.Table.CachedWorkSheetNamespace
   {
     #region public
     public ISpreadSheetReader SpreadSheetReader { get; private set; }
+    public INamedCells NamedCells { get { return SpreadSheetReader.NamedCells; } }
+
     public CachedWorksheet this[string worksheet]
     {
       get

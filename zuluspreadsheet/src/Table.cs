@@ -23,6 +23,8 @@ namespace Zulu.Table.Table
     string[] TableNames { get; }
     ITable this[string tableName] { get; }
     TableCollection.TypedTable<T> TypedRows<T>(string tableName = null) where T : ITableRowTyped, new();
+    ISpreadSheetReader SpreadSheetReader { get; }
+    INamedCells NamedCells { get; }
   }
 
   public interface ITable : IEnumerable<ITableRow>, IReference
@@ -113,6 +115,8 @@ namespace Zulu.Table.Table
     #endregion
 
     #region public
+    public ISpreadSheetReader SpreadSheetReader { get { return reader; } }
+
     public string FileName { get { return reader.Filename; } }
     public string[] TableNames { get; private set; }
     public IEnumerator<ITable> GetEnumerator() { return tables.Values.OrderBy(t => t.Name).GetEnumerator(); }
@@ -121,6 +125,7 @@ namespace Zulu.Table.Table
     public string Name { get { return reader.Name; } }
     public string Description { get { return reader.Description; } }
     public string Reference { get { return reader.Reference; } }
+    public INamedCells NamedCells { get { return SpreadSheetReader.NamedCells; } }
     #endregion
 
     #region Generic Helpers
@@ -406,7 +411,7 @@ namespace Zulu.Table.Table
       /// <summary>
       /// returns the column name in the 'A-Z'-Syntax
       /// </summary>
-      public string ColumnAZ { get { return Zulu.Table.SpreadSheet.SpreadSheetReaderFactory.intToAZ(ColumnNumberOffset0); } }
+      public string ColumnAZ { get { return Zulu.Table.SpreadSheet.SpreadSheetReaderFactory.IntToAZ(ColumnNumberOffset0); } }
 
       /// <summary>
       /// returns "column A7"

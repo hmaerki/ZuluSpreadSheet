@@ -9,6 +9,7 @@ using Zulu.Table.SpreadSheet;
 using Zulu.Table.Table;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Zulu.Table.TableDumpNamespace
 {
@@ -45,17 +46,26 @@ namespace Zulu.Table.TableDumpNamespace
 
     public void dump(TextWriter tw, string filename = null)
     {
-      foreach (ITable table in tableCollection)
+      tw.WriteLine();
+      tw.WriteLine($"NamedCells");
+      tw.WriteLine("  Name{DELIMIETER}CellValue");
+      tw.WriteLine();
+      foreach (string name in tableCollection.NamedCells.Names)
+      {
+        tw.WriteLine($"  {name}{DELIMIETER}{tableCollection.NamedCells[name]}");
+      }
+
+      foreach (ITable table in tableCollection.OrderBy(tc => tc.Name))
       {
         tw.WriteLine();
         tw.WriteLine($"Table: {table.Name}");
-        tw.WriteLine($"  {string.Join(DELIMIETER, table.ColumnNames)}");
+        tw.WriteLine($"  {string.Join(DELIMIETER, table.ColumnNames.OrderBy(n => n))}");
         tw.WriteLine();
 
         foreach (ITableRow row in table)
         {
           List<string> cells = new List<string>();
-          foreach (ITableColumn col in table.Columns)
+          foreach (ITableColumn col in table.Columns.OrderBy(c => c.Name))
           {
             string reference = col.Reference;
             ICell cell = row[col];

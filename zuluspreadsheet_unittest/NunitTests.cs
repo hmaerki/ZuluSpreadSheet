@@ -6,12 +6,13 @@
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt)
 //
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Zulu.Table.CachedWorkSheetNamespace;
 using Zulu.Table.SpreadSheet;
 using Zulu.Table.Table;
-using System;
-using System.IO;
-using System.Linq;
 
 namespace Zulu.Table.NunitTests
 {
@@ -33,7 +34,7 @@ namespace Zulu.Table.NunitTests
     [TestCase(27, ExpectedResult = "AB")]
     public string Test_AZ(int i)
     {
-      return SpreadSheetReaderFactory.intToAZ(i);
+      return SpreadSheetReaderFactory.IntToAZ(i);
     }
 
     /// <summary>
@@ -182,12 +183,40 @@ namespace Zulu.Table.NunitTests
       ICell cell = GetCachedSpreadSheet(extension)["SheetA"]["C5"];
       Assert.AreEqual("Spalte4Zeile7", cell.String);
     }
+
     [Test]
     public void TestAccessByColumnCell([Values(SpreadSheetReaderFactory.EXTENSION_ODS, SpreadSheetReaderFactory.EXTENSION_XLSX)] string extension)
     {
       // Note: Index is 0based. [row][column].
       ICell cell = GetCachedSpreadSheet(extension)["SheetA"][4][2];
       Assert.AreEqual("Spalte4Zeile7", cell.String);
+    }
+
+    [Test]
+    public void TestNamedCells([Values(SpreadSheetReaderFactory.EXTENSION_ODS, SpreadSheetReaderFactory.EXTENSION_XLSX)] string extension)
+    {
+      foreach (var list in new List<Tuple<string, string>> {
+             Tuple.Create( "NamedCellA", "cell 'B2' in worksheet 'Named Cells' in file 'zuluspreadsheet_test.<EXTENSION>'" ),
+             Tuple.Create( "NamedCellB", "cell 'B4' in worksheet 'Named Cells' in file 'zuluspreadsheet_test.<EXTENSION>'" ),
+          })
+      {
+        string namedCellName = list.Item1;
+        string expectedReference = list.Item2.Replace("<EXTENSION>", extension);
+
+        CachedSpreadSheet spreadSheet = GetCachedSpreadSheet(extension);
+        INamedCells namedCells = spreadSheet.NamedCells;
+
+        Assert.AreEqual(2, namedCells.Names.Length);
+
+        // Access a named cell and get it's value
+        string value = namedCells[namedCellName];
+        string expectedValue = $"This is: {namedCellName}";
+        Assert.AreEqual(expectedValue, value);
+
+        // Access a named cell and get it's cell
+        ICell cell = namedCells.GetCell(namedCellName);
+        Assert.AreEqual(expectedReference, cell.Reference);
+      }
     }
   }
 

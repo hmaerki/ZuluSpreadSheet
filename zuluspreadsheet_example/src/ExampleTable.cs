@@ -1,9 +1,9 @@
-﻿using Zulu.Table.SpreadSheet;
-using Zulu.Table.Table;
-using Zulu.Table.TableDumpNamespace;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using Zulu.Table.SpreadSheet;
+using Zulu.Table.Table;
+using Zulu.Table.TableDumpNamespace;
 
 namespace Zulu.Table.Example
 {
