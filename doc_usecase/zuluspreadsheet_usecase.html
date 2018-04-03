@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+	<head>
+  <title>ZuluSpreadSheet</title>
+  <style type="text/css">
+<!--
+body {font-family: Arial; color: #000000; margin: 1px}
+code {font-family: "Courier New", Courier, mono; color: #336699;
+      font-size: 10pt}
+pre  {font-family: "Courier New", Courier, mono;
+      color: black; background-color: #eeeeee;
+      border: 1pt solid; border-color: #336699; width: 0;
+      padding-right: 7pt; padding-left: 7pt; padding-top: 7pt; padding-bottom: 7pt;
+      overflow: auto; width: auto; white-space: pre; }
+p    {font-size: 10pt}
+h1, h2, h3, h4 {font-weight: bold; color: #336699}
+h1   {margin-top: 7px; margin-bottom: 5px; font-size: 160%}
+h2   {margin-top: 7px; margin-bottom: 4px; font-size: 130%}
+h3   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
+h4   {margin-top: 7px; margin-bottom: 4px; font-size: 110%}
+td   {}
+li   {font-size: 10pt}
+ul   {margin-top: 2px; margin-bottom: 2px}
+ol   {margin-top: 2px; margin-bottom: 2px}
+hr   {color: #336699; height: 1px}
+b    {color: #336699}
+img  {border: none}
+a          {color: #336699}
+a:hover    {color: #000077}
+a:visited  {color: #996699}
+-->
+</style>
+</head>
+    <body>
+        <h1>ZuluSpreadSheet - Use Case</h1>
+        <p>The ZuluSpreadSheet-Repository may be found <a href="..">here</a></p>
+        <h2>Objective</h2>
+        <p>Example Data: Some engineers do <i>measurements</i> using some <i>equipment</i>. The data is collected in the follwoing spreadsheet:</p>
+        <p><a target="blank" href="images/tables.png"><img src="images/tables.png"/></a></p>
+        <p>This document presents the use of the library ZuluSpreadSheet to process the data</p>
+        <h2>Preparation</h2>
+        <p>Start a new C# Console Application and install <code>zuluspredsheet</code> from nuget.<br/>
+        Download <a href="../zuluspreadsheet_example/zuluspreadsheet_test.xlsx">zuluspreadsheet_test.xlsx</a>. It contains the sample data.</p>
+        <h2>Code</h2>
+        <p>The code below is part of the example project and may be downloaded <a target="blank" href="zuluspreadsheet_example/src/ExampleUseCase.cs">here</a><br/>
+        Call the codesnippes from <code>Main()</code> to make it run:</p>
+        <code><pre>public static void Main(string[] args)
+{
+  ITableCollection tables = TableCollection.factory("zuluspreadsheet_test.xlsx");
+  demoLinq(tables);
+}</pre></code>
+        <h3>Define a class for each table</h3>
+        <p>SPOT - Single Point of Truth: Please note how the strong coupling between the table name, the names of the columns and there datatypes is condensed in this class.<br/>
+        No other code has knowledge of the spreadsheet - which is loose coupling.
+        <code><pre>[TableName("Equipment")]
+class TableEquipment : ITableRowTyped
+{
+  public enum EnumType { Voltmeter, Multimeter, Oscilloscope };
+  public ITableRow TableRow { get; set; }
+
+  public readonly int ID = 0;
+  public readonly EnumType Type = EnumType.Multimeter;
+  public readonly string Model = null;
+  public readonly string Serial = null;
+}
+
+[TableName("Measurement")]
+class TableMeasurement : ITableRowTyped
+{
+  public ITableRow TableRow { get; set; }
+
+  public readonly DateTime Date = DateTime.MinValue;
+  public readonly string Operator = null;
+  public readonly int Equipment = 0;
+}</code></pre>
+
+        <h3>Use <code>TableEquipement</code> and <code>TableMeasurement</code> in a linq-query</h3>
+        <p>Note that the following code has, apart from the two classes, no knowledge of the spreadsheet.</p>
+        <code><pre>static void demoLinq(ITableCollection tables)
+{
+  // Demonstrate table-access using 'class TableMeasurement' and linq-join
+  // When was which equipment used by Karl?
+  var equipment = tables.TypedRows&lt;TableEquipment>();
+  var measurement = tables.TypedRows&lt;TableMeasurement>();
+  var list = from e in equipment
+             join m in measurement on e.ID equals m.Equipment
+             where (m.Operator == "Karl")
+             select new { Measurement = m, Equipment = e };
+  foreach (var row in list)
+  {
+    Debug.Print($"Date '{row.Measurement.Date:yyyy-MM-dd}': {row.Equipment.Model} (See {row.Measurement.TableRow.Reference})");
+  }</code></pre>
+
+        <h3>Use direct access to the tables (middle-level access)</h3>
+        <code><pre>static void demoTable(ITableCollection tables)
+{
+  {
+    // Demonstrate table-access using indexing
+    ITable table = tables["Measurement"];
+    ICell cell = table[2]["Operator"];
+    table[2]["Date"].Parse(out DateTime dateTime);
+  }
+
+  {
+    // Demonstrate table-access using Iterators
+    foreach (ITable table in tables)
+    {
+      foreach (ITableRow row in table)
+      {
+        foreach (ITableColumn col in table.Columns)
+        {
+          string reference = col.Reference;
+          ICell cell = row[col];
+        }
+      }
+    }
+  }
+}</code></pre>
+
+        <h3>Directly access cells in worksheets (low-level access)</h3>
+        <p>The lowlevel interface is not demonstrated here. It may be used to implement other high-level access interfaces.</p>
+        
+        <h3>Dump the spreadsheet-payload</h3>
+        <p>The payload of the spreadsheet is dumped to <code>zuluspreadsheet_test_dump.txt</code>. This is useful for sourcerepositories to find changes in the payload. Exactly this is a big hassle with binary Excel- or OpenOffice-files in code repositories!</p>
+        <code><pre>static void demoDump(ITableCollection tables)
+{
+  TableDump dumper = new TableDump(tables);
+  // Will create "zuluspreadsheet_test_dump.txt"
+  dumper.dump();
+}</code></pre>
+<p>Contents of <code>zuluspreadsheet_test_dump.txt</code>:</p>
+<code><pre>Table: Equipment
+  ID|Model|Serial|Type
+
+  1|Keysight 34460A|1245678|Voltmeter
+  2|Fluke 787|2234|Multimeter
+  3|KEYSIGHT U1231A|134555|Voltmeter
+
+Table: Measurement
+  Date|Equipment|Operator
+
+  42906|1|Karl
+  42906|3|Rosa
+  42898|1|Otto
+  42891|2|Karl</code></pre>
+
+
+    </body>
+</html>

@@ -458,7 +458,7 @@ namespace Zulu.Table.Table
         table = table_;
         row = row_;
 
-        cells = new SpreadSheetReaderFactory.Cell[table_.Column.Count];
+        cells = SpreadSheetReaderFactory.NewCellArray(table_.Column.Count);
 
         {
           ICell cell = row_[TableCollection.CELLINDEX_TABLE_NAME];

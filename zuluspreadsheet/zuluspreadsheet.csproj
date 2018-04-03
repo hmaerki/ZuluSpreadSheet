@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>3.0.2.0</AssemblyVersion>
+    <AssemblyVersion>3.0.3.0</AssemblyVersion>
     <PackageLicenseUrl>http://www.boost.org/LICENSE_1_0.txt</PackageLicenseUrl>
     <Copyright>Copyright 2017 Solcept AG, 2002-2018, Hans Maerki, Maerki Informatik</Copyright>
     <PackageProjectUrl>https://github.com/hmaerki/ZuluSpreadSheet</PackageProjectUrl>
@@ -12,8 +12,8 @@
     <Authors>Hans Märki</Authors>
     <Company>Märki Informatik</Company>
     <Product>Zulu Spread Sheet</Product>
-    <Version>3.0.2</Version>
-    <FileVersion>3.0.2</FileVersion>
+    <Version>3.0.3</Version>
+    <FileVersion>3.0.3</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.IO.Compression" />

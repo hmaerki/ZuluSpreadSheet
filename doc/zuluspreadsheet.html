@@ -17,7 +17,7 @@ h1, h2, h3, h4 {font-weight: bold; color: #336699}
 h1   {margin-top: 7px; margin-bottom: 5px; font-size: 160%}
 h2   {margin-top: 7px; margin-bottom: 4px; font-size: 130%}
 h3   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
-h4   {margin-top: 7px; margin-bottom: 4px; font-size: 120%}
+h4   {margin-top: 7px; margin-bottom: 4px; font-size: 110%}
 td   {}
 li   {font-size: 10pt}
 ul   {margin-top: 2px; margin-bottom: 2px}
@@ -46,6 +46,7 @@ a:visited  {color: #996699}
                 <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/zuluspreadsheet_test.ods">zuluspreadsheet_test.ods</a> OpenOffice-Calc used by the examples.</li>
                 <li><a target="blank" href="https://github.com/hmaerki/ZuluSpreadSheet/blob/master/zuluspreadsheet_example/zuluspreadsheet_test.xlsx">zuluspreadsheet_test.xlsx</a> Excel used by the examples.</li>
             </ul>
+            <li>A <a href="../doc_usecase/zuluspreadsheet_usecase.html">UseCase</a> demonstrating the high-level interface</li>
         </ul>
         <h2>Intention</h2>
         <p>You have to write a application where the end user has to provide some information. Yes, you could use configurations files. But this library is a very sexy alternative!</p>
@@ -310,17 +311,7 @@ foreach (TableC row in tables.TypedRows&lt;TableC>())
         <h3>Text in IReference and SpreadSheetException is in english.</h3>
         <h3>Merged Cells has not been tested.</h3>
         <h3>Excel/Openoffice with Macros (Different File endings)</h3>
-        <h3>Values for Double and Dates.</h3>
-        <p>The current implementation takes text.<br/> Program returned value<br/>
-            <code>Excel 165.34567000000001</code>
-            <br/>
-            <code> OpenOffice 165.35</code>
-            <br/>
-            <br/>Program returned value<br/>
-            <code>Excel 33646.043090277803</code>
-            <br/>
-            <code>OpenOffice 1992-02-12</code>
-        </p>
+        <h3>Values for Doubles.</h3>
         <h4>Excel:</h4>
 
 

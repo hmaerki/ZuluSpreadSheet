@@ -98,7 +98,6 @@ namespace Zulu.Table.SpreadSheet
     string[] Names { get; }
   }
 
-
   /// <summary>
   /// This is the interface to a Excel- or OpenOffice Calc-document.
   /// To instantiate it use <code>SpreadSheetReaderFactory.factory(<filename)</code>
@@ -111,6 +110,7 @@ namespace Zulu.Table.SpreadSheet
     string Filename { get; }
     List<IWorksheet> Worksheets { get; }
     INamedCells NamedCells { get; }
+    bool IsExcel { get; }
   }
 
   /// <summary>
@@ -161,6 +161,11 @@ namespace Zulu.Table.SpreadSheet
     /// If <code>String</code> may not be parsed. a <code>SpreadSheetException</code> will be thrown.
     /// </summary>
     T Parse<T>();
+
+    /// <summary>
+    /// Same as <code>Parse<T>()</code>, but requries less writing.
+    /// </summary>
+    void Parse<T>(out T value);
 
     /// <summary>
     /// Same as <code>Parse<T>()</code>, but the interface may be used for reflection purposes.
@@ -219,6 +224,7 @@ namespace Zulu.Table.SpreadSheet
     public string Description { get { return $"file '{Name}'"; } }
     public string Reference { get { return Description; } }
     public INamedCells NamedCells { get; protected set; }
+    public bool IsExcel { get; private set; }
     #endregion
 
     #region Constants
@@ -311,9 +317,10 @@ namespace Zulu.Table.SpreadSheet
       return new CellAddress(text, column0, row0);
     }
 
-    private SpreadSheetReaderFactory(string filename)
+    private SpreadSheetReaderFactory(string filename, bool isExcel)
     {
       Filename = filename;
+      IsExcel = isExcel;
 
       XmlNameTable xnt = new NameTable();
       nsMgr = new XmlNamespaceManager(xnt);
@@ -393,7 +400,7 @@ namespace Zulu.Table.SpreadSheet
       private XmlNodeList sharedStrings;
 
       public ReaderExcel(string filename)
-        : base(filename)
+        : base(filename, isExcel: true)
       {
         XmlDocument xmlWorkbook = loadXml("xl/workbook.xml");
         Worksheets = loadWorksheets(xmlWorkbook);
@@ -530,7 +537,7 @@ namespace Zulu.Table.SpreadSheet
     /// </summary>
     private class ReaderOpenOffice : SpreadSheetReaderFactory, ISpreadSheetReader
     {
-      public ReaderOpenOffice(string filename) : base(filename)
+      public ReaderOpenOffice(string filename) : base(filename, isExcel: false)
       {
         XmlDocument xmlDocContent = loadXml("content.xml");
         Worksheets = loadWorksheets(xmlDocContent);
@@ -665,6 +672,7 @@ namespace Zulu.Table.SpreadSheet
       public string Description { get { return $"worksheet '{Name}'"; } }
       public string Reference { get { return $"{Description} in {readerFactory.Reference}"; } }
       public IEnumerable<IRow> Rows { get { return readerFactory.rows(this, nodeWorksheet); } }
+      public bool IsExcel { get { return readerFactory.IsExcel; } }
       #endregion
 
       public Worksheet(SpreadSheetReaderFactory readerBase_, XmlNode nodeWorksheet_, string worksheetName)
@@ -673,6 +681,7 @@ namespace Zulu.Table.SpreadSheet
         Name = worksheetName;
         readerFactory = readerBase_;
       }
+
       #region private
       private SpreadSheetReaderFactory readerFactory;
       private XmlNode nodeWorksheet;
@@ -731,7 +740,12 @@ namespace Zulu.Table.SpreadSheet
       #endregion
     }
 
-    public class Cell : ICell
+    public static ICell[] NewCellArray(int count)
+    {
+      return new SpreadSheetReaderFactory.Cell[count];
+    }
+
+    protected class Cell : ICell
     {
       #region public
       public string Name { get; private set; }
@@ -740,9 +754,25 @@ namespace Zulu.Table.SpreadSheet
       public string String { get; private set; }
       #endregion
 
+      public Cell(string value, string name, Worksheet worksheet_)
+      {
+        String = value;
+        Name = name;
+        worksheet = worksheet_;
+      }
+
+      #region Public Methods
       public T Parse<T>()
       {
         return (T)Parse(typeof(T));
+      }
+
+      /// <summary>
+      /// Same as <code>Parse<T>()</code>, but requries less writing.
+      /// </summary>
+      public void Parse<T>(out T value)
+      {
+        value = (T)Parse(typeof(T));
       }
 
       public object Parse(Type type)
@@ -759,6 +789,17 @@ namespace Zulu.Table.SpreadSheet
             object enumValue = ParseEnum(type, s);
             return enumValue;
           }
+
+          if ((type == typeof(DateTime)) && (worksheet.IsExcel))
+          {
+            // OpenOffice stores dates as strings (1992-02-12)
+            // Excel stores dates as doubles (33646.043090277803).
+            // This is the Excel-Version:
+            double d = double.Parse(s);
+            DateTime dateTime = DateTime.FromOADate(d);
+            return dateTime;
+          }
+
           // CultureInfo.InvariantCulture: Avoid problem with the conversion of doubles or dates because of the culture settings
           return Convert.ChangeType(s, type, CultureInfo.InvariantCulture);
         }
@@ -773,10 +814,18 @@ namespace Zulu.Table.SpreadSheet
           {
             name = "float";
           }
+
           throw new SpreadSheetException($"'{s}' is not a valid {name}!", this);
         }
       }
 
+      public T ParseEnum<T>(string value)
+      {
+        return (T)ParseEnum<T>(value);
+      }
+      #endregion
+
+      #region Private Methods
       private object ParseEnum(Type type, string value)
       {
         System.Array possibleEnumValues = Enum.GetValues(type);
@@ -790,10 +839,6 @@ namespace Zulu.Table.SpreadSheet
         // throw new TableException("'" + value + "' is not valid. Use one of " + values + "!", tableRow: this, tableColumn: excelTable.Columns[fieldInfo.Name]);
         throw new SpreadSheetException("'" + value + "' is not valid. Use one of " + values + "!", this);
       }
-      public T ParseEnum<T>(string value)
-      {
-        return (T)ParseEnum<T>(value);
-      }
 
       private object extractEnumValue(System.Array possibleEnumV, string cellValue)
       {
@@ -806,16 +851,10 @@ namespace Zulu.Table.SpreadSheet
         }
         return null;
       }
+      #endregion
 
-      public Cell(string value, string name, IReference worksheet_)
-      {
-        String = value;
-        Name = name;
-        worksheet = worksheet_;
-      }
-
-      #region private
-      IReference worksheet;
+      #region private members
+      private Worksheet worksheet;
       #endregion
       #endregion
     }

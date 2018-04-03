@@ -15,6 +15,8 @@
 
       DemoSpreadSheet demoSpreadSheet = new DemoSpreadSheet();
       demoSpreadSheet.run();
+
+      Zulu.Table.ExampleUseCase.Program.Main(args);
     }
   }
 }

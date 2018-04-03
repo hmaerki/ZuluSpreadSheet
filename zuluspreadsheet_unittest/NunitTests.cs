@@ -128,7 +128,7 @@ namespace Zulu.Table.NunitTests
       SpreadSheetException ex = Assert.Throws<SpreadSheetException>(
        delegate
        {
-         int i = cell.Parse<int>();
+         cell.Parse(out int i);
        });
 
       string msg = "'male' is not a valid integer!";
@@ -144,7 +144,7 @@ namespace Zulu.Table.NunitTests
       SpreadSheetException ex = Assert.Throws<SpreadSheetException>(
        delegate
        {
-         EnumGender enumGender = cell.Parse<EnumGender>();
+         cell.Parse(out EnumGender enumGender);
        });
       string msg = "'male' is not valid. Use one of EnumA, EnumB, EnumC!";
       Assert.AreEqual(msg, ex.Msg);
@@ -158,23 +158,32 @@ namespace Zulu.Table.NunitTests
       //   This test failes for float in case of Excel
       ICell cell = GetCachedSpreadSheet(extension)["SheetA"]["F16"];
 
-      double size = cell.Parse<double>();
+      cell.Parse(out double size);
 
       Assert.AreEqual(165.35, size, delta: 0.00000001);
     }
 
     [Test]
-    public void TestReadDate([Values(SpreadSheetReaderFactory.EXTENSION_ODS)] string extension)
+    public void TestReadDate([Values(SpreadSheetReaderFactory.EXTENSION_ODS, SpreadSheetReaderFactory.EXTENSION_XLSX)] string extension)
     {
       // TODO: SpreadSheetReaderFactory.EXTENSION_XLSX
       //   This test failes for DateTime in case of Excel
-      ICell cell = GetCachedSpreadSheet(extension)["SheetA"]["G16"];
+      CachedSpreadSheet css = GetCachedSpreadSheet(extension);
+      ICell cell = css["SheetA"]["G16"];
 
-      string dateTimeString = cell.String;
-      Assert.AreEqual("1992-02-12", dateTimeString);
+      {
+        string dateTimeString = cell.String;
+        string expectedTimeString = css.SpreadSheetReader.IsExcel ? "33646.043090277803" : "1992-02-12";
+        Assert.AreEqual(expectedTimeString, dateTimeString);
+      }
 
-      DateTime dateTime = cell.Parse<DateTime>();
-      Assert.AreEqual(new DateTime(1992, 02, 12), dateTime);
+      {
+        cell.Parse(out DateTime dateTime);
+        // On Excel, we have some minutes and seconds: This is a rounding error of the float stored by excel.
+        // We format the 'dateTime' as a string to get rid of minutes and seconds.
+        string dateTimeString = dateTime.ToString("yyyy-MM-dd");
+        Assert.AreEqual("1992-02-12", dateTimeString);
+      }
     }
 
     [Test]

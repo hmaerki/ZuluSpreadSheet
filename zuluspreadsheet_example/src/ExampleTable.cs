@@ -7,10 +7,9 @@ using Zulu.Table.TableDumpNamespace;
 
 namespace Zulu.Table.Example
 {
-  [FileName(DemoTable.Filename)]
   class DemoTable
   {
-    public const string Filename = "./zuluspreadsheet_test.ods";
+    public const string Filename = "./zuluspreadsheet_test.xlsx";
 
     /// <summary>
     /// This code expected a table as follows in OpenOffice-Calc or Excel:
@@ -19,6 +18,7 @@ namespace Zulu.Table.Example
     /// TABLE                Moritz    13
     /// </summary>
     [TableName("TableC")]
+    [FileName(Filename)]
     private class TableC : ITableRowTyped
     {
       public enum EnumGender { male, female };
@@ -32,7 +32,7 @@ namespace Zulu.Table.Example
 
     public void run()
     {
-      ITableCollection tables = TableCollection.factory(Filename);
+       ITableCollection tables = TableCollection.factory(Filename);
 
       {
         // Use indexing
@@ -40,7 +40,7 @@ namespace Zulu.Table.Example
         {
           ITable table = tables["TableC"];
           ICell cell = table[2]["Age"];
-          int age = table[2]["Age"].Parse<int>();
+          table[2]["Age"].Parse(out int age);
         }
       }
 
@@ -62,6 +62,12 @@ namespace Zulu.Table.Example
       {
         // Use a structure
         foreach (TableC row in tables.TypedRows<TableC>())
+        {
+          Debug.Print(row.Name + " " + row.Age + " " + row.Gender);
+        }
+
+        // This constructor uses the filename attribute: '[FileName(Filename)]'
+        foreach (TableC row in new TableCollection.TypedTable<TableC>())
         {
           Debug.Print(row.Name + " " + row.Age + " " + row.Gender);
         }

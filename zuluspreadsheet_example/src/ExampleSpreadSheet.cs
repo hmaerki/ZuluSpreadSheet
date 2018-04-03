@@ -13,7 +13,7 @@ namespace Zulu.Table.Example
 {
   class DemoSpreadSheet
   {
-    private const string Filename = "../../../zuluspreadsheet_test.ods";
+    private const string Filename = "zuluspreadsheet_test.ods";
 
     enum GenderEnum { male, female };
     public void run()
@@ -73,7 +73,7 @@ namespace Zulu.Table.Example
         ICell cell = workSheet["C5"];
         try
         {
-          int i = cell.Parse<int>();
+           cell.Parse<int>(out int i);
         }
         catch (SpreadSheetException ex)
         {
@@ -92,7 +92,7 @@ namespace Zulu.Table.Example
         ICell cell = workSheet["E15"];
         try
         {
-          GenderEnum gender = cell.Parse<GenderEnum>();
+           cell.Parse(out GenderEnum gender);
         }
         catch (SpreadSheetException ex)
         {

@@ -2,6 +2,7 @@
 Read data from Excel or Calc SpreadSheets. Runs without external libraries.
 
 [Documentation and Example-Code](https://rawgit.com/hmaerki/ZuluSpreadSheet/master/doc/zuluspreadsheet.html)
+[Usecase demonstrating the high-level interface](https://rawgit.com/hmaerki/ZuluSpreadSheet/master/doc_usecase/zuluspreadsheet_usecase.html)
 
 Have fun!
 <br/>&nbsp;&nbsp;&nbsp;Hans
