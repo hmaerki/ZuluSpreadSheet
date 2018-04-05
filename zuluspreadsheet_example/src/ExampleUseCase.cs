@@ -71,9 +71,11 @@ namespace Zulu.Table.ExampleUseCase
                  select new { Measurement = m, Equipment = e };
       foreach (var row in list)
       {
-        Debug.Print($"Date '{row.Measurement.Date:yyyy-MM-dd}': {row.Equipment.Model} (See {row.Measurement.TableRow.Reference})");
+        string msg = $"Date '{row.Measurement.Date:yyyy-MM-dd}': {row.Equipment.Model} (See {row.Measurement.TableRow.Reference})";
+        // msg: "Date '2017-06-20': Keysight 34460A (See row 9 in worksheet 'SheetQuery' in file 'zuluspreadsheet_test.xlsx')"
+        // msg: "Date '2017-06-05': Fluke 787 (See row 12 in worksheet 'SheetQuery' in file 'zuluspreadsheet_test.xlsx')"
+        Debug.Print(msg);
       }
-
     }
 
     static void demoTable(ITableCollection tables)
