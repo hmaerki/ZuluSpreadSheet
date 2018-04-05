@@ -44,10 +44,27 @@ namespace Zulu.Table.ExampleUseCase
 
     static void demoLinq(ITableCollection tables)
     {
-      // Demonstrate table-access using 'class TableMeasurement' and linq-join
-      // When was which equipment used by Karl?
+      // The two tables in the spreadsheet
       var equipment = tables.TypedRows<TableEquipment>();
       var measurement = tables.TypedRows<TableMeasurement>();
+
+      // Demonstrate table-access using 'class TableMeasurement' for iteration
+      foreach (TableMeasurement row in measurement)
+      {
+        Debug.Print(row.Date + " " + row.Operator + " " + row.Equipment);
+      }
+
+      // Demonstrate table-access using 'class TableMeasurement' and linq
+      // Return the date when Karl was measuring first
+      var row_ = measurement.Where(row => row.Operator == "Karl").OrderBy(row => row.Date).First();
+      // dateTime: 2017-06-05
+      DateTime dateTime = row_.Date;
+      // It may be handy to inform the user where this Date is coming from.
+      // reference: "row 12 in worksheet 'SheetQuery' in file 'zuluspreadsheet_test.xlsx'"
+      string reference = row_.TableRow.Reference;
+
+      // Demonstrate table-access using 'class TableMeasurement' and linq-join
+      // When was which equipment used by Karl?
       var list = from e in equipment
                  join m in measurement on e.ID equals m.Equipment
                  where (m.Operator == "Karl")
@@ -57,11 +74,6 @@ namespace Zulu.Table.ExampleUseCase
         Debug.Print($"Date '{row.Measurement.Date:yyyy-MM-dd}': {row.Equipment.Model} (See {row.Measurement.TableRow.Reference})");
       }
 
-      // Demonstrate table-access using 'class TableMeasurement' for iteration
-      foreach (TableMeasurement row in tables.TypedRows<TableMeasurement>())
-      {
-        Debug.Print(row.Date + " " + row.Operator + " " + row.Equipment);
-      }
     }
 
     static void demoTable(ITableCollection tables)

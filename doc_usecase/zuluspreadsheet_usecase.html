@@ -37,7 +37,7 @@ a:visited  {color: #996699}
         <h2>Objective</h2>
         <p>Example Data: Some engineers do <i>measurements</i> using some <i>equipment</i>. The data is collected in the follwoing spreadsheet:</p>
         <p><a target="blank" href="images/tables.png"><img src="images/tables.png"/></a></p>
-        <p>This document presents the use of the library ZuluSpreadSheet to process the data</p>
+        <p>This document presents how to use the library ZuluSpreadSheet to process this data</p>
         <h2>Preparation</h2>
         <p>Start a new C# Console Application and install <code>zuluspredsheet</code> from nuget.<br/>
         Download <a href="../zuluspreadsheet_example/zuluspreadsheet_test.xlsx">zuluspreadsheet_test.xlsx</a>. It contains the sample data.</p>
@@ -50,7 +50,7 @@ a:visited  {color: #996699}
   demoLinq(tables);
 }</pre></code>
         <h3>Define a class for each table</h3>
-        <p>SPOT - Single Point of Truth: Please note how the strong coupling between the table name, the names of the columns and there datatypes is condensed in this class.<br/>
+        <p>SPOT - Single Point of Truth: Please note the strong coupling between the table name, the names of the columns and there datatypes. All this coupling is implemented in this class.<br/>
         No other code has knowledge of the spreadsheet - which is loose coupling.
         <code><pre>[TableName("Equipment")]
 class TableEquipment : ITableRowTyped
@@ -78,10 +78,27 @@ class TableMeasurement : ITableRowTyped
         <p>Note that the following code has, apart from the two classes, no knowledge of the spreadsheet.</p>
         <code><pre>static void demoLinq(ITableCollection tables)
 {
-  // Demonstrate table-access using 'class TableMeasurement' and linq-join
-  // When was which equipment used by Karl?
+  // The two tables in the spreadsheet
   var equipment = tables.TypedRows&lt;TableEquipment>();
   var measurement = tables.TypedRows&lt;TableMeasurement>();
+
+  // Demonstrate table-access using 'class TableMeasurement' for iteration
+  foreach (TableMeasurement row in measurement)
+  {
+    Debug.Print(row.Date + " " + row.Operator + " " + row.Equipment);
+  }
+
+  // Demonstrate table-access using 'class TableMeasurement' and linq
+  // Return the date when Karl was measuring first
+  var row_ = measurement.Where(row => row.Operator == "Karl").OrderBy(row => row.Date).First();
+  // dateTime: 2017-06-05
+  DateTime dateTime = row_.Date;
+  // It may be handy to inform the user where this Date is coming from.
+  // reference: "row 12 in worksheet 'SheetQuery' in file 'zuluspreadsheet_test.xlsx'"
+  string reference = row_.TableRow.Reference;
+
+  // Demonstrate table-access using 'class TableMeasurement' and linq-join
+  // When was which equipment used by Karl?
   var list = from e in equipment
              join m in measurement on e.ID equals m.Equipment
              where (m.Operator == "Karl")
@@ -89,7 +106,9 @@ class TableMeasurement : ITableRowTyped
   foreach (var row in list)
   {
     Debug.Print($"Date '{row.Measurement.Date:yyyy-MM-dd}': {row.Equipment.Model} (See {row.Measurement.TableRow.Reference})");
-  }</code></pre>
+  }
+
+}</code></pre>
 
         <h3>Use direct access to the tables (middle-level access)</h3>
         <code><pre>static void demoTable(ITableCollection tables)
