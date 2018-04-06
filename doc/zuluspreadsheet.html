@@ -192,10 +192,9 @@ foreach (IWorksheet worksheet in reader.Worksheets)
 <code><pre>
 SpreadSheet spreadSheet = ...;
 string value = spreadSheet.NamedCells["CellName"];
-</pre></code>                     
-        <h3>Typed access</h3><p>ICell.Parse&lt;T&gt;() allows parsing of many datatypes. An exception is thrown, when parising fails.</p>
-
-
+</pre></code>
+        <h3>Typed access</h3
+        p>ICell.Parse&lt;T&gt;() allows parsing of many datatypes. An exception is thrown, when parising fails.</p>
         <table>
             <thead>
                 <tr>
@@ -232,11 +231,29 @@ string value = spreadSheet.NamedCells["CellName"];
                 </tr>
             </tbody>
         </table>
+        <h3>Typed access - UserTypes</h3>
+        <p>A UserType may define a parse-Method which transforms a cell-value in the UserType.<br/>
+        <code>UserTypeOnlyHttpsUri</code> derives from <code>Uri</code>, but throws an exception when the protocol is not <code>https</code>.<br/>
+        Important is the method <code>public static bool TryParse(string s, out UserTypeOnlyHttpsUri uri)</code> which will be found by reflection and called to create the object.</p>
+        <code><pre>public class UserTypeOnlyHttpsUri : Uri
+{
+  private UserTypeOnlyHttpsUri(string uri) : base(uri) { }
+
+  private const string ALLOWED_SCHEME = "https";
+  public static bool TryParse(string s, out UserTypeOnlyHttpsUri uri)
+  {
+    uri = new UserTypeOnlyHttpsUri(s);
+    if (uri.Scheme != ALLOWED_SCHEME)
+    {
+      throw new FormatException($"Only {ALLOWED_SCHEME} is allowed");
+    }
+    return true;
+  }
+}</pre></code>
 
         <h3>Module CachedSpreadSheet</h3><p>CachedSpreadSheet caches a SpreadSheet and therefore provides direct access using Worksheet/Row/Column.</p>
 
-        <code><pre>
-CachedSpreadSheet spreadSheet = new CachedSpreadSheet(Filename);
+        <code><pre>CachedSpreadSheet spreadSheet = new CachedSpreadSheet(Filename);
 ICell cell = spreadSheet[ "SheetA" ][ "C5" ];
 Debug.Print( "Cell: " + cell.String);</pre></code>
 

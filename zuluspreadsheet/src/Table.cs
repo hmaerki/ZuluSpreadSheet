@@ -352,7 +352,7 @@ namespace Zulu.Table.Table
         Name = startingRow_[CELLINDEX_TABLE_NAME].String.Trim();
         if (Name == "")
         {
-          throw new SpreadSheetException("Column 'B' is empty but must contain a table-name.", this);
+          throw new SpreadSheetException("Column 'B' is empty but must contain a table-name.", startingRow);
         }
 
         for (int i = CELLINDEX_DATA_START; i < startingRow_.Columns; i++)

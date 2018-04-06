@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml;
 
@@ -775,6 +776,11 @@ namespace Zulu.Table.SpreadSheet
         value = (T)Parse(typeof(T));
       }
 
+      /// <summary>
+      /// The tryParse-Methods are cached under the assumption, that "type.GetMethod" is slower than a dictionary.
+      /// </summary>
+      private static Dictionary<Type, MethodInfo> cacheTryParse = new Dictionary<Type, MethodInfo>();
+
       public object Parse(Type type)
       {
         string s = String.Trim();
@@ -798,6 +804,41 @@ namespace Zulu.Table.SpreadSheet
             double d = double.Parse(s);
             DateTime dateTime = DateTime.FromOADate(d);
             return dateTime;
+          }
+
+          /*
+           * A UserType may define 'TryParse'.
+           * 
+           *  public struct SpreadSheetColumnReference
+           *  {
+           *    public static bool TryParse(string s, out SpreadSheetColumnReference result)
+           *  }
+           *
+           * Many C# Classes do the same. For example string, int, DateTime
+           */
+          if (!cacheTryParse.TryGetValue(type, out MethodInfo tryParse))
+          {
+            tryParse = type.GetMethod("TryParse",
+                 BindingFlags.Public | BindingFlags.Static,
+                 null,
+                 new[] { typeof(string), type.MakeByRefType() },
+                 null);
+            cacheTryParse[type] = tryParse;
+          }
+
+          if (tryParse != null)
+          {
+            object[] args = { s, null };
+            try
+            {
+              if ((bool)tryParse.Invoke(null, args))
+              {
+                return args[1];
+              }
+            } catch (TargetInvocationException ex)
+            {
+                throw new SpreadSheetException($"'{s}' is not a valid {type.Name} ({ex.InnerException.Message})!", this);
+            }
           }
 
           // CultureInfo.InvariantCulture: Avoid problem with the conversion of doubles or dates because of the culture settings

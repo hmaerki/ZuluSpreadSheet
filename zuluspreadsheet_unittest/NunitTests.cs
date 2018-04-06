@@ -321,6 +321,50 @@ namespace Zulu.Table.NunitTests
       Assert.AreEqual(msg + " " + CellReferenceG3, fixOdtXls(ex.Message));
     }
 
+    public class UserTypeOnlyHttpsUri : Uri
+    {
+      private UserTypeOnlyHttpsUri(string uri) : base(uri) { }
+
+      private const string ALLOWED_SCHEME = "https";
+      public static bool TryParse(string s, out UserTypeOnlyHttpsUri uri)
+      {
+        uri = new UserTypeOnlyHttpsUri(s);
+        if (uri.Scheme != ALLOWED_SCHEME)
+        {
+          throw new FormatException($"Only {ALLOWED_SCHEME} is allowed");
+        }
+        return true;
+      }
+    }
+
+    [Test]
+    public void TestUserType([Values(SpreadSheetReaderFactory.EXTENSION_ODS, SpreadSheetReaderFactory.EXTENSION_XLSX)] string extension)
+    {
+      ITableCollection tableCollection = TableCollection.factory(PathToTestSheet + "/zuluspreadsheet_test." + extension);
+      string[] expectedValues = new string[] {
+        "github.com", // https://github.com/hmaerki/ZuluSpreadSheet
+        "www.nuget.org", // https://www.nuget.org/packages/zuluspreadsheet
+      };
+      ITableRow[] rows = tableCollection["TableC"].ToArray();
+      for (int row = 0; row < expectedValues.Length; row++)
+      {
+        ICell cell = rows[row]["OnlyHttpsUri"];
+        cell.Parse(out UserTypeOnlyHttpsUri uri);
+        Assert.AreEqual(expectedValues[row], uri.Host);
+      }
+
+      SpreadSheetException ex = Assert.Throws<SpreadSheetException>(
+        delegate
+        {
+          // http://www.url.ch
+          ICell cell = rows[2]["OnlyHttpsUri"];
+          // The following line will throw an exception
+          cell.Parse(out UserTypeOnlyHttpsUri uri);
+        });
+      string msg = "'http://www.url.ch/uv' is not a valid UserTypeOnlyHttpsUri (Only https is allowed)!";
+      Assert.AreEqual(msg, ex.Msg);
+    }
+
     /// <summary>
     /// This class represents 'TableA' in our Excel/OpenOffice-Sheet.
     /// </summary>
