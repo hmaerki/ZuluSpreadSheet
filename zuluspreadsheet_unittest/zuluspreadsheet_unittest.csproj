@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <AssemblyVersion>3.0.4.0</AssemblyVersion>
+    <AssemblyVersion>3.0.5.0</AssemblyVersion>
     <PackageLicenseUrl>http://www.boost.org/LICENSE_1_0.txt</PackageLicenseUrl>
     <Copyright>Copyright 2017 Solcept AG, 2002-2018, Hans Maerki, Maerki Informatik</Copyright>
     <PackageProjectUrl>https://github.com/hmaerki/ZuluSpreadSheet</PackageProjectUrl>
@@ -12,7 +12,7 @@
     <Authors>Hans Märki</Authors>
     <Company>Märki Informatik</Company>
     <Product>Zulu Spread Sheet</Product>
-    <Version>3.0.4</Version>
+    <Version>3.0.5</Version>
     <StartupObject></StartupObject>
     <ApplicationIcon />
     <OutputType>Library</OutputType>

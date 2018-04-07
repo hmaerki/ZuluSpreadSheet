@@ -406,6 +406,7 @@ namespace Zulu.Table.SpreadSheet
         XmlDocument xmlWorkbook = loadXml("xl/workbook.xml");
         Worksheets = loadWorksheets(xmlWorkbook);
         NamedCells = LoadNamedCells(xmlWorkbook);
+        Close();
       }
 
       protected override void populateNamespace()
@@ -543,6 +544,7 @@ namespace Zulu.Table.SpreadSheet
         XmlDocument xmlDocContent = loadXml("content.xml");
         Worksheets = loadWorksheets(xmlDocContent);
         NamedCells = LoadNamedCells(xmlDocContent);
+        Close();
       }
 
       protected override void populateNamespace()
@@ -835,9 +837,10 @@ namespace Zulu.Table.SpreadSheet
               {
                 return args[1];
               }
-            } catch (TargetInvocationException ex)
+            }
+            catch (TargetInvocationException ex)
             {
-                throw new SpreadSheetException($"'{s}' is not a valid {type.Name} ({ex.InnerException.Message})!", this);
+              throw new SpreadSheetException($"'{s}' is not a valid {type.Name} ({ex.InnerException.Message})!", this);
             }
           }
 
@@ -903,12 +906,24 @@ namespace Zulu.Table.SpreadSheet
     #region protected
     protected abstract IEnumerable<Row> rows(Worksheet worksheet, XmlNode nodeWorksheet);
     protected abstract void populateNamespace();
+
+    protected void Close()
+    {
+      if (zipIn != null)
+      {
+        zipIn.Dispose();
+        zipIn = null;
+      }
+      if (zipToOpen != null)
+      {
+        zipToOpen.Close();
+        zipToOpen = null;
+      }
+    }
     #endregion
 
     #region private
-    // TODO(HM): Don't forget to dispose
-    private readonly ZipArchive zipIn;
-    // TODO(HM): Don't forget to dispose
+    private ZipArchive zipIn;
     private FileStream zipToOpen;
     private XmlNamespaceManager nsMgr;
     #endregion
